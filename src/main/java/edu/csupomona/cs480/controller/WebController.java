@@ -1,20 +1,34 @@
 package edu.csupomona.cs480.controller;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
-
-import edu.csupomona.cs480.controller.AudioAPI;
 import edu.csupomona.cs480.App;
+import edu.csupomona.cs480.controller.Storage.FileSystemStorageService;
+import edu.csupomona.cs480.controller.Storage.StorageFileNotFoundException;
+import edu.csupomona.cs480.controller.Storage.StorageService;
 import edu.csupomona.cs480.data.GpsProduct;
 import edu.csupomona.cs480.data.User;
 import edu.csupomona.cs480.data.provider.GpsProductManager;
@@ -43,6 +57,8 @@ public class WebController {
 	@Autowired
 	private GpsProductManager gpsManager;
 
+	private StorageService storageService = null;
+
 	/**
 	 * This is a simple example of how the HTTP API works. It returns a String
 	 * "OK" in the HTTP response. To try it, run the web application locally, in
@@ -51,24 +67,76 @@ public class WebController {
 	 * @throws Exception
 	 */
 	@RequestMapping(value = "/cs480/ping", method = RequestMethod.GET)
-	boolean healthCheck() throws Exception {
+	boolean healthCheck(FileSystemStorageService storageService) throws Exception {
 		// You can replace this with other string,
 		// and run the application locally to check your changes
 		// with the URL: http://localhost:8080/
-		AudioAPI test = new AudioAPI();
-		File audioInput = new File("/users/Mostafa/Workspace/AudioClassifier/testDirUncut/test.wav");
+		// AudioAPI test = new AudioAPI();
+		// File audioInput = new
+		// File("/users/Mostafa/Workspace/AudioClassifier/testDirUncut/test.wav");
 		// System.out.println(test.predictor(audioInput));
-		return test.predictor(audioInput);
+		// return test.predictor(audioInput);
+
+		this.storageService = storageService;
+
+		return true;
 
 	}
 
-//	RequestMapping(value = "batch/run/add", method = RequestMethod.POST)
-//
-//	public void addBatchRun(@RequestParam(value = "description", required = false) String description,
-//			@RequestParam("urlFile") MultipartFile file, HttpServletResponse response) throws Exception {
-//		String batchId = screenshotManager.addBatchRun(description, file.getInputStream());
-//		response.getWriter().write("{ \"id\" : \"" + batchId + "\"}");
-//	}
+	@RequestMapping(value = "/files/{filename:.+}", method = RequestMethod.POST)
+	public String listUploadedFiles(Model model) throws IOException {
+
+		model.addAttribute("files",
+				storageService.loadAll()
+						.map(path -> MvcUriComponentsBuilder
+								.fromMethodName(WebController.class, "serveFile", path.getFileName().toString()).build()
+								.toString())
+						.collect(Collectors.toList()));
+
+		return "uploadForm";
+	}
+
+	@RequestMapping(value = "/files2/{filename:.+}", method = RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+
+		Resource file = storageService.loadAsResource(filename);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+				.body(file);
+	}
+
+	@RequestMapping(value= "/", method = RequestMethod.POST)
+    public String handleFileUpload(@RequestParam("file") MultipartFile file,
+                                   RedirectAttributes redirectAttributes) {
+
+    	try {
+            // copy file
+            OutputStream os = new FileOutputStream(new File("random"));
+            IOUtils.copy(file.getInputStream(), os);
+            os.close();
+            file.getInputStream().close();
+        } catch (IOException e) {
+        	e.printStackTrace();
+        }
+        return "redirect:/";
+    }
+
+	@ExceptionHandler(StorageFileNotFoundException.class)
+	public ResponseEntity handleStorageFileNotFound(StorageFileNotFoundException exc) {
+		return ResponseEntity.notFound().build();
+	}
+
+	// RequestMapping(value = "batch/run/add", method = RequestMethod.POST)
+	//
+	// public void addBatchRun(@RequestParam(value = "description", required =
+	// false) String description,
+	// @RequestParam("urlFile") MultipartFile file, HttpServletResponse
+	// response) throws Exception {
+	// String batchId = screenshotManager.addBatchRun(description,
+	// file.getInputStream());
+	// response.getWriter().write("{ \"id\" : \"" + batchId + "\"}");
+	// }
 
 	/**
 	 * This is a simple example of how to use a data manager to retrieve the
@@ -141,11 +209,11 @@ public class WebController {
 	 * This method provide a simple web UI for you to test the different
 	 * functionalities used in this web service.
 	 */
-	@RequestMapping(value = "/cs480/home", method = RequestMethod.GET)
-	ModelAndView getUserHomepage() {
-		ModelAndView modelAndView = new ModelAndView("home");
-		modelAndView.addObject("users", listAllUsers());
-		return modelAndView;
-	}
+//	@RequestMapping(value = "/cs480/home", method = RequestMethod.GET)
+//	ModelAndView getUserHomepage() {
+//		ModelAndView modelAndView = new ModelAndView("home");
+//		modelAndView.addObject("users", listAllUsers());
+//		return modelAndView;
+//	}
 
 }
