@@ -71,15 +71,14 @@ public class WebController {
 		// You can replace this with other string,
 		// and run the application locally to check your changes
 		// with the URL: http://localhost:8080/
-		// AudioAPI test = new AudioAPI();
-		// File audioInput = new
-		// File("/users/Mostafa/Workspace/AudioClassifier/testDirUncut/test.wav");
-		// System.out.println(test.predictor(audioInput));
-		// return test.predictor(audioInput);
+		 AudioAPI test = new AudioAPI();
+		 File audioInput = new
+		 File("upload.wav");
+		 return test.predictor(audioInput);
 
-		this.storageService = storageService;
+//		this.storageService = storageService;
 
-		return true;
+//		return true;
 
 	}
 
@@ -112,14 +111,14 @@ public class WebController {
 
     	try {
             // copy file
-            OutputStream os = new FileOutputStream(new File("random"));
+            OutputStream os = new FileOutputStream(new File("upload.wav"));
             IOUtils.copy(file.getInputStream(), os);
             os.close();
             file.getInputStream().close();
         } catch (IOException e) {
         	e.printStackTrace();
         }
-        return "redirect:/";
+        return "http://localhost:8080/cs480/ping";
     }
 
 	@ExceptionHandler(StorageFileNotFoundException.class)

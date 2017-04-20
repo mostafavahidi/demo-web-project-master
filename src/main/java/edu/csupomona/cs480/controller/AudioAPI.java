@@ -1,6 +1,5 @@
 package edu.csupomona.cs480.controller;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -17,6 +16,11 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
+import org.apache.commons.io.FileUtils;
+
+import edu.csupomona.cs480.controller.Complex;
+import edu.csupomona.cs480.controller.FFT;
+import edu.csupomona.cs480.controller.WavFile;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -182,7 +186,7 @@ public class AudioAPI {
 
 		double[][] linearFreqMatrix = new double[5][];
 
-		File folder = new File("/Users/Mostafa/workspace/AudioClassifier/");
+		File folder = new File("Audio/");
 		File[] listOfFiles = folder.listFiles(new FilenameFilter() {
 			public boolean accept(File folder, String name) {
 				return name.toLowerCase().endsWith(".wav");
@@ -322,16 +326,55 @@ public class AudioAPI {
 		}
 	}
 
+	
 	public boolean predictor(File audioInput) throws Exception {
-//		// Split the 5 second audio file into five, 1 second long audio files.
-//		waveSplitter(audioInput);
 
+		File folder = new File(System.getProperty("user.dir"));
+		File fList[] = folder.listFiles();
+		// Searches .wav
+		for (int i = 0; i < fList.length; i++) {
+		    File pes = fList[i];
+		    if (pes.getName().endsWith(".wav") && !pes.getName().endsWith("upload.wav")) {
+		        pes.delete();
+		    }
+		}
+		
+		// Split the 5 second audio file into five, 1 second long audio files.
+		waveSplitter(audioInput);
+		
+		//Copy 5 .wav files from AudioClassifier to Audio folder
+//		File sourceOfFiles = new File (System.getProperty("user.dir"));
+		File dest = new File ("Audio/");
+		
+		File copyList[] = folder.listFiles();
+		
+		for (int i = 0; i < copyList.length; i++){
+			File cop = copyList[i];
+			switch (cop.getName()){
+			case "out1.wav":
+			case "out2.wav":
+			case "out3.wav":
+			case "out4.wav":
+			case "out5.wav":
+					try {
+					    FileUtils.copyFileToDirectory(cop, dest);
+					} catch (IOException e) {
+					    e.printStackTrace();
+					}
+			break;
+			default:
+					
+			
+			}
+		}
+		
+		
 		// Extract all the attributes from these files and make ARFF file
 		// ("TestAudio.Arff")
 		attributeExtractor(linearFreqMatrixCreator());
 
 		// Load training dataset
-		DataSource source = new DataSource("/users/Mostafa/Workspace/AudioClassifier/TrainingAudio.arff");
+		DataSource source = new DataSource("src/TrainingAudio.arff");
 		Instances trainDataSet = source.getDataSet();
 
 		// Set Class index to the last attribute
@@ -342,7 +385,7 @@ public class AudioAPI {
 		bayes.buildClassifier(trainDataSet);
 
 		// Load Test dataset
-		DataSource source1 = new DataSource("/users/Mostafa/Workspace/AudioClassifier/TestAudio.arff");
+		DataSource source1 = new DataSource("src/TestAudio.arff");
 		Instances testDataSet = source1.getDataSet();
 
 		// Set class index to the last attribute
@@ -350,7 +393,7 @@ public class AudioAPI {
 
 		int commerciallyClassified = 0;
 		int noncommerciallyClassified = 0;
-		
+
 		for (int i = 0; i < testDataSet.numInstances(); i++) {
 			// Get instance object of current instance.
 			Instance newInst = testDataSet.instance(i);
@@ -360,21 +403,22 @@ public class AudioAPI {
 			// Use this value to get string value of the predicted class.
 			String predString = testDataSet.classAttribute().value((int) predBayes);
 			System.out.println("Predicted: " + predString);
-			if (predString.equals("commercial")){
+			if (predString.equals("commercial")) {
 				commerciallyClassified++;
 			} else {
 				noncommerciallyClassified++;
 			}
 		}
-		
+
 		System.out.println(commerciallyClassified);
 		System.out.println(noncommerciallyClassified);
-		
-		if (commerciallyClassified > noncommerciallyClassified){
+
+		if (commerciallyClassified > noncommerciallyClassified) {
 			return true;
 		} else {
 			return false;
 		}
 	}
+
 
 }

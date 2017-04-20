@@ -1,0 +1,12 @@
+@relation Audio-weka.filters.unsupervised.instance.NonSparseToSparse
+@attribute 'Volume' real
+@attribute 'Number of Extreme Frequencies' real
+@attribute 'Spectrul Flux' real
+@attribute 'Type' {commercial, noncommercial}
+
+@data
+3.891226436562754E7,2748.0,165992.47140580398,?
+5.238623223750714E7,2532.0,193203.39337112333,?
+2.9941369593926486E7,2626.0,144619.81819733724,?
+4.7572798660495035E7,2601.0,181670.45024721333,?
+3.7137108806840286E7,2141.0,167653.10800985698,?
