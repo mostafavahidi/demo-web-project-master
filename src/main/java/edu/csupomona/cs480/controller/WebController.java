@@ -118,8 +118,18 @@ public class WebController {
         } catch (IOException e) {
         	e.printStackTrace();
         }
-        return "http://localhost:8080/cs480/ping";
-    }
+		try {
+			boolean isAd = healthCheck(null);
+			if(isAd) {
+				return "This is an ad.";
+			} else {
+				return "This is a song.";
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "error";
+	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
 	public ResponseEntity handleStorageFileNotFound(StorageFileNotFoundException exc) {
